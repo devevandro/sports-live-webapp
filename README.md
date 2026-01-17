@@ -1,4 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Live App - YouTube Lives Viewer
+
+A modern [Next.js 16](https://nextjs.org) application for viewing and managing YouTube sports live streams with a clean, responsive UI.
+
+## 🚀 Technologies Used
+
+- **Framework**: Next.js 16.0.10 with App Router
+- **Language**: TypeScript (ES2017)
+- **Styling**: Tailwind CSS with PostCSS
+- **UI Components**: Radix UI with shadcn/ui
+- **Styling Tools**: Lucide React icons, class-variance-authority, clsx
+- **Theme Support**: next-themes for dark/light mode
+- **Code Quality**: ESLint
+
+## 📋 Project Structure
+
+```
+├── app/
+│   ├── api/
+│   │   └── youtube-lives/     # API routes for YouTube data
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Main page
+│   └── globals.css             # Global styles
+├── components/
+│   ├── youtube-player.tsx       # Video player component
+│   ├── video-sidebar.tsx        # Sidebar component
+│   └── mobile-video-list.tsx    # Mobile list component
+├── lib/
+│   └── utils.ts                # Utility functions
+└── public/                      # Static assets
+```
 
 ## Getting Started
 
@@ -6,19 +36,19 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The page will auto-update as you edit files in `app/` and `components/` directories.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## TypeScript Configuration
+
+The project uses strict TypeScript settings with:
+- Path aliases (`@/*` for root imports)
+- Incremental compilation
+- React JSX transform
+- ES modules
 
 ## Learn More
 
