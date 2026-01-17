@@ -2,9 +2,21 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const channels = process.env.NEXT_PUBLIC_CHANNELS
-      ? process.env.NEXT_PUBLIC_CHANNELS.split(",").map((ch) => ch.trim())
-      : [];
+    const channels = [
+      "@canalgoatbr",
+      "@EsportenaBand",
+      "@espnbrasil",
+      "@xsports.brasil",
+      "@paulistao",
+      "@MetropolesEsportes",
+      "@NSports",
+      "@federacaopr",
+      "@aleagues",
+      "@tvbrasilcentral",
+      "@SportyNetBrasil",
+      "@getv",
+      "desimpedidos",
+    ];
 
     const videosMap = new Map();
 
