@@ -25,6 +25,7 @@ export async function GET() {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 10000);
 
+        console.log(`Buscando dados de: ${channel}`);
         const response = await fetch(`https://www.youtube.com/${channel}`, {
           headers: { "User-Agent": "Mozilla/5.0" },
           cache: "no-store",
