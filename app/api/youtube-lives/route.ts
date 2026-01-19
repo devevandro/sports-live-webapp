@@ -4,7 +4,7 @@ export async function GET() {
   try {
     const channels = [
       "@canalgoatbr",
-      "@EsporteaBand",
+      "@EsportenaBand",
       "@espnbrasil",
       "@xsports.brasil",
       "@paulistao",
@@ -15,7 +15,7 @@ export async function GET() {
       "@tvbrasilcentral",
       "@SportyNetBrasil",
       "@getv",
-      "desimpedidos",
+      "@desimpedidos",
     ];
 
     const videosMap = new Map();
