@@ -16,6 +16,10 @@ export async function GET() {
       "@SportyNetBrasil",
       "@getv",
       "@desimpedidos",
+      "@CazeTV",
+      "@tveespiritosanto",
+      "@rcsportoficial",
+      "@TVFNF"
     ];
 
     const videosMap = new Map();
