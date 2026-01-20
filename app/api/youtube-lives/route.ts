@@ -4,7 +4,9 @@ export async function GET() {
   try {
     const channels = [
       "@canalgoatbr",
+      "@SportyNetBrasil",
       "@EsportenaBand",
+      "@nbabrasil",
       "@espnbrasil",
       "@xsports.brasil",
       "@paulistao",
@@ -13,7 +15,6 @@ export async function GET() {
       "@federacaopr",
       "@aleagues",
       "@tvbrasilcentral",
-      "@SportyNetBrasil",
       "@getv",
       "@desimpedidos",
       "@CazeTV",
