@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { VideoSidebar } from "./video-sidebar";
 import { MobileVideoList } from "./mobile-video-list";
-import { PictureInPicture, Loader2, VideoOff } from "lucide-react";
+import { Loader2, VideoOff } from "lucide-react";
 
 interface Video {
   id: string;
@@ -90,8 +90,8 @@ export function YouTubePlayer() {
         />
       </div>
 
-      <div className="md:hidden flex flex-col h-screen overflow-y-auto">
-        <div className="w-full shrink-0">
+      <div className="md:hidden flex flex-col h-screen">
+        <div className="w-full shrink-0 sticky top-0 z-10 bg-[#0f0f0f]">
           <div className="relative w-full aspect-video bg-black">
             <iframe
               key={selectedVideo.id}
@@ -122,11 +122,13 @@ export function YouTubePlayer() {
           </div>
         </div>
 
-        <MobileVideoList
-          videos={otherVideos}
-          selectedVideo={selectedVideo}
-          onSelectVideo={setSelectedVideo}
-        />
+        <div className="flex-1 overflow-y-auto">
+          <MobileVideoList
+            videos={otherVideos}
+            selectedVideo={selectedVideo}
+            onSelectVideo={setSelectedVideo}
+          />
+        </div>
       </div>
 
       <div className="hidden md:flex h-full flex-col items-center justify-center p-4">
