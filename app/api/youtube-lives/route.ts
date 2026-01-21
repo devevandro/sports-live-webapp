@@ -20,7 +20,8 @@ export async function GET() {
       "@CazeTV",
       "@tveespiritosanto",
       "@rcsportoficial",
-      "@TVFNF"
+      "@TVFNF",
+      "TvFFDF"
     ];
 
     const videosMap = new Map();
