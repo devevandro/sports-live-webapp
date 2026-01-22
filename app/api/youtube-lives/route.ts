@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 let cachedVideos: any[] = [];
 let lastFetchTime = 0;
-const CACHE_DURATION = 8 * 60 * 1000;
+const CACHE_DURATION = 5 * 60 * 1000;
 
 export async function GET(request: Request) {
   try {
@@ -57,39 +57,6 @@ export async function GET(request: Request) {
     ];
 
     const videosMap = new Map();
-    
-    async function fetchVideoDetails(videoIds: string[]): Promise<any[]> {
-      if (videoIds.length === 0) return [];
-      
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-
-        const idsParam = videoIds.join(',');
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsParam}&key=${API_KEY}`;
-        
-        const response = await fetch(url, {
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.items && data.items.length > 0) {
-          return data.items.filter((item: any) => item.snippet.categoryId === "17");
-        }
-        
-        return [];
-      } catch (error) {
-        console.error('Erro ao buscar detalhes dos vídeos:', error);
-        return [];
-      }
-    }
 
     async function fetchLiveVideos(channelId: string) {
       try {
@@ -111,23 +78,19 @@ export async function GET(request: Request) {
         const data = await response.json();
         
         if (data.items && data.items.length > 0) {
-          const videoIds = data.items.map((item: any) => item.id.videoId);
-          
-          const footballVideos = await fetchVideoDetails(videoIds);
-          
-          footballVideos.forEach((videoDetail: any) => {
-            const originalItem = data.items.find((item: any) => item.id.videoId === videoDetail.id);
-            
-            if (originalItem) {
-              videosMap.set(videoDetail.id, {
-                id: videoDetail.id,
-                title: videoDetail.snippet.title,
-                channel: videoDetail.snippet.channelTitle,
-                thumbnail: originalItem.snippet.thumbnails?.default?.url || videoDetail.snippet.thumbnails?.default?.url,
-                viewers: "Ao vivo",
-                categoryId: videoDetail.snippet.categoryId,
-              });
-            }
+          data.items.forEach((item: any) => {
+            const videoId = item.id.videoId;
+            const title = item.snippet.title;
+            const thumbnail = item.snippet.thumbnails?.default?.url;
+            const channelTitle = item.snippet.channelTitle;
+
+            videosMap.set(videoId, {
+              id: videoId,
+              title: title,
+              channel: channelTitle,
+              thumbnail: thumbnail,
+              viewers: "Ao vivo",
+            });
           });
         }
 
@@ -146,7 +109,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const batchSize = 1;
+    const batchSize = 3;
     const batches = [];
     
     for (let i = 0; i < channelIds.length; i += batchSize) {
@@ -160,16 +123,10 @@ export async function GET(request: Request) {
       
       console.log(`Processando lote ${i + 1}/${batches.length}...`);
       
-      for (const channelId of batch) {
-        await fetchLiveVideos(channelId);
-        
-        if (batch.length > 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
+      await Promise.all(batch.map(fetchLiveVideos));
       
       if (i < batches.length - 1) {
-        const delayTime = 1500;
+        const delayTime = 1000;
         console.log(`Aguardando ${delayTime}ms antes do próximo lote...`);
         await new Promise(resolve => setTimeout(resolve, delayTime));
       }
@@ -182,15 +139,13 @@ export async function GET(request: Request) {
     
     console.log(`Total de vídeos encontrados: ${videos.length}`);
     console.log(`Canais processados: ${channelIds.length}`);
-    console.log(`Vídeos de futebol filtrados: ${videos.length}`);
     console.log('Cache atualizado');
     
     if (videos.length === 0) {
-      console.warn('Nenhum vídeo de futebol ao vivo encontrado. Possíveis causas:');
+      console.warn('Nenhum vídeo ao vivo encontrado. Possíveis causas:');
       console.warn('1. Rate limiting da API do YouTube');
-      console.warn('2. Nenhum canal está transmitindo futebol ao vivo');
+      console.warn('2. Nenhum canal está transmitindo ao vivo');
       console.warn('3. Problema com a chave da API');
-      console.warn('4. Vídeos ao vivo não são da categoria futebol (17)');
     }
 
     return NextResponse.json({
