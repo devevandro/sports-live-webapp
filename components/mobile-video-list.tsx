@@ -1,6 +1,6 @@
 "use client";
 
-import { Radio, MoreVertical } from "lucide-react";
+import { Radio, MoreVertical, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Video {
@@ -15,24 +15,49 @@ interface MobileVideoListProps {
   videos: Video[];
   selectedVideo: Video;
   onSelectVideo: (video: Video) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 export function MobileVideoList({
   videos,
   selectedVideo,
   onSelectVideo,
+  onRefresh,
+  isLoading = false,
 }: MobileVideoListProps) {
 
   return (
     <div className="flex-1 flex flex-col bg-[#0f0f0f]">
       <div className="sticky top-0 z-10 bg-[#0f0f0f] border-b border-[#272727]">
-        <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto">
+        <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-1 px-3 py-1.5 bg-red-600/20 rounded-lg">
             <Radio className="w-3 h-3 text-red-500" />
             <span className="text-xs text-red-400 font-medium">
               {videos.length + 1} ao vivo
             </span>
           </div>
+          
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isLoading}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-white transition-colors rounded",
+                "hover:bg-[#272727]/50 disabled:opacity-50 disabled:cursor-not-allowed",
+                isLoading && "animate-pulse"
+              )}
+              title="Atualizar lives"
+            >
+              <RefreshCw className={cn(
+                "w-3 h-3",
+                isLoading && "animate-spin"
+              )} />
+              <span className="text-xs">
+                {isLoading ? "Buscando..." : "Atualizar"}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

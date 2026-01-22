@@ -1,47 +1,74 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+let cachedVideos: any[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 8 * 60 * 1000;
+
+export async function GET(request: Request) {
   try {
-    const channels = [
-      "@canalgoatbr",
-      "@SportyNetBrasil",
-      "@EsportenaBand",
-      "@nbabrasil",
-      "@espnbrasil",
-      "@xsports.brasil",
-      "@paulistao",
-      "@MetropolesEsportes",
-      "@NSports",
-      "@federacaopr",
-      "@aleagues",
-      "@tvbrasilcentral",
-      "@getv",
-      "@desimpedidos",
-      "@CazeTV",
-      "@tveespiritosanto",
-      "@rcsportoficial",
-      "@TVFNF",
-      "TvFFDF"
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get('refresh') === 'true';
+    
+    const now = Date.now();
+    const cacheExpired = now - lastFetchTime > CACHE_DURATION;
+    
+    if (!forceRefresh && cachedVideos.length > 0 && !cacheExpired) {
+      console.log('Retornando dados do cache');
+      return NextResponse.json({
+        videos: cachedVideos,
+        fromCache: true,
+        lastUpdate: new Date(lastFetchTime).toISOString(),
+        nextUpdate: new Date(lastFetchTime + CACHE_DURATION).toISOString()
+      });
+    }
+    
+    const API_KEY = process.env.YOUTUBE_API_KEY;
+    
+    if (!API_KEY) {
+      console.error("YOUTUBE_API_KEY não está configurada");
+      return NextResponse.json(
+        { error: "API key não configurada" },
+        { status: 500 }
+      );
+    }
+
+    const channelIds = [
+      "UCs-6sCz2LJm1PrWQN4ErsPw",
+      "UC6dZOvuuxPz5Mw8FmbLPZYQ",
+      "UCU7CKWffsyRnkG2yfI8w3gA",
+      "UCMcc9elPZGpg6eU4i3YaCpA",
+      "UCZaOZdn-Y-I5ikrofkWBLgQ",
+      "UCWJ2lWNubArHWmf3FIHbfcQ",
+      "UCw5-xj3AKqEizC7MvHaIPqA",
+      "UCH-BU-Os3JSo2L8lBQxE8KA",
+      "UCH4Cn6LPGlC9oBqrfh1qySg",
+      "UC9mdw2mmn49ZuqGOpSri7Fw",
+      "UCf9WJPpsh5BHDY-OeISgIq",
+      "UCb74ViTMFgndOaTehM5PVdg",
+      "UCzRogd_oK3bzKvAW-4aLuPQ",
+      "UCTRp0APA50MmSh9U03MDXSA",
+      "UCgCKagVhzGnZcuP9bSMgMCg",
+      "UCFjrDmEnxrG5TRGVO0TPHLA",
+      "UCZiYbVptd3PVPf4f6eR6UaQ",
+      "UC94kyY3rSw4j4LjAd8tUBBw",
+      "UCk_kqhVTW4TTS3wB15lrdBw",
+      "UCrlSTiILK9Q61R11O_gEuNg",
+      "UCuGW2-KtjIS2GI707tO8H9A"
     ];
 
     const videosMap = new Map();
-
-    async function processUrl(channel: string) {
+    
+    async function fetchVideoDetails(videoIds: string[]): Promise<any[]> {
+      if (videoIds.length === 0) return [];
+      
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000); // Reduzido para 6s
+        const timeout = setTimeout(() => controller.abort(), 10000);
 
-        const response = await fetch(`https://www.youtube.com/${channel}`, {
-          headers: { 
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
-            "DNT": "1",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1",
-          },
-          cache: "no-store",
+        const idsParam = videoIds.join(',');
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsParam}&key=${API_KEY}`;
+        
+        const response = await fetch(url, {
           signal: controller.signal,
         });
 
@@ -51,117 +78,140 @@ export async function GET() {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const html = await response.text();
+        const data = await response.json();
         
-        if (html.length < 1000) {
-          console.warn(`HTML muito pequeno para ${channel}: ${html.length} caracteres`);
-          console.warn(`Primeiros 500 caracteres:`, html.substring(0, 500));
+        if (data.items && data.items.length > 0) {
+          return data.items.filter((item: any) => item.snippet.categoryId === "17");
+        }
+        
+        return [];
+      } catch (error) {
+        console.error('Erro ao buscar detalhes dos vídeos:', error);
+        return [];
+      }
+    }
+
+    async function fetchLiveVideos(channelId: string) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${API_KEY}&maxResults=10`;
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const match = html.match(/var ytInitialData = ({.*?});/);
-
-        if (!match) {
-          console.warn(`ytInitialData não encontrado para URL: ${channel}`);
-          return;
-        }
-
-        let ytInitialData;
-        try {
-          const jsonStr = match[1].replace(/\n/g, "").replace(/\r/g, "");
-          ytInitialData = JSON.parse(jsonStr);
-        } catch (parseError) {
-          console.error(
-            `Erro ao fazer parse do JSON para URL ${channel}:`,
-            parseError
-          );
-          return;
-        }
-
-        function walk(obj: any) {
-          if (!obj || typeof obj !== "object") return;
-
-          if (obj.videoRenderer) {
-            const vr = obj.videoRenderer;
-
-            const isWatching = vr.viewCountText?.runs?.some(
-              (run: any) => run?.text === " assistindo"
-            );
-
-            if (isWatching && vr.videoId) {
-              const thumbnails = vr.thumbnail?.thumbnails ?? [];
-
-              const title =
-                vr.title?.runs?.map((r: any) => r.text).join("") ?? null;
-
-              const channel =
-                vr.ownerText?.runs?.map((r: any) => r.text).join("") ??
-                vr.shortBylineText?.runs?.map((r: any) => r.text).join("") ??
-                null;
-
-              const viewersText =
-                vr.viewCountText?.runs?.map((r: any) => r.text).join("") ??
-                "Ao vivo";
-
-              videosMap.set(vr.videoId, {
-                id: vr.videoId,
-                title,
-                channel,
-                thumbnail: thumbnails[2]?.url ?? thumbnails[1]?.url ?? null,
-                viewers: viewersText,
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+          const videoIds = data.items.map((item: any) => item.id.videoId);
+          
+          const footballVideos = await fetchVideoDetails(videoIds);
+          
+          footballVideos.forEach((videoDetail: any) => {
+            const originalItem = data.items.find((item: any) => item.id.videoId === videoDetail.id);
+            
+            if (originalItem) {
+              videosMap.set(videoDetail.id, {
+                id: videoDetail.id,
+                title: videoDetail.snippet.title,
+                channel: videoDetail.snippet.channelTitle,
+                thumbnail: originalItem.snippet.thumbnails?.default?.url || videoDetail.snippet.thumbnails?.default?.url,
+                viewers: "Ao vivo",
+                categoryId: videoDetail.snippet.categoryId,
               });
             }
-          }
-
-          for (const key in obj) {
-            walk(obj[key]);
-          }
+          });
         }
 
-        walk(ytInitialData);
       } catch (error) {
         if (error instanceof Error) {
           if (error.name === "AbortError") {
-            console.error(`Timeout ao processar URL ${channel}`);
+            console.error(`Timeout ao processar canal ${channelId}`);
           } else if (error.message.includes("HTTP")) {
-            console.error(`Erro HTTP ao processar URL ${channel}:`, error.message);
+            console.error(`Erro HTTP ao processar canal ${channelId}:`, error.message);
           } else {
-            console.error(`Erro ao processar URL ${channel}:`, error.message);
+            console.error(`Erro ao processar canal ${channelId}:`, error.message);
           }
         } else {
-          console.error(`Erro desconhecido ao processar URL ${channel}:`, error);
+          console.error(`Erro desconhecido ao processar canal ${channelId}:`, error);
         }
       }
     }
 
-    const batchSize = 3;
+    const batchSize = 1;
     const batches = [];
     
-    for (let i = 0; i < channels.length; i += batchSize) {
-      batches.push(channels.slice(i, i + batchSize));
+    for (let i = 0; i < channelIds.length; i += batchSize) {
+      batches.push(channelIds.slice(i, i + batchSize));
     }
 
-    for (const batch of batches) {
-      await Promise.all(batch.map(processUrl));
-      if (batch !== batches[batches.length - 1]) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log(`Processando ${batches.length} lotes com ${batchSize} canal(is) cada`);
+
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      
+      console.log(`Processando lote ${i + 1}/${batches.length}...`);
+      
+      for (const channelId of batch) {
+        await fetchLiveVideos(channelId);
+        
+        if (batch.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      if (i < batches.length - 1) {
+        const delayTime = 1500;
+        console.log(`Aguardando ${delayTime}ms antes do próximo lote...`);
+        await new Promise(resolve => setTimeout(resolve, delayTime));
       }
     }
 
     const videos = [...videosMap.values()];
     
+    cachedVideos = videos;
+    lastFetchTime = now;
+    
     console.log(`Total de vídeos encontrados: ${videos.length}`);
-    console.log(`Canais processados: ${channels.length}`);
+    console.log(`Canais processados: ${channelIds.length}`);
+    console.log(`Vídeos de futebol filtrados: ${videos.length}`);
+    console.log('Cache atualizado');
     
     if (videos.length === 0) {
-      console.warn('Nenhum vídeo ao vivo encontrado. Possíveis causas:');
-      console.warn('1. Rate limiting do YouTube');
-      console.warn('2. Mudança na estrutura HTML');
-      console.warn('3. Bloqueio de IP/User-Agent');
+      console.warn('Nenhum vídeo de futebol ao vivo encontrado. Possíveis causas:');
+      console.warn('1. Rate limiting da API do YouTube');
+      console.warn('2. Nenhum canal está transmitindo futebol ao vivo');
+      console.warn('3. Problema com a chave da API');
+      console.warn('4. Vídeos ao vivo não são da categoria futebol (17)');
     }
 
-    return NextResponse.json(videos);
+    return NextResponse.json({
+      videos,
+      fromCache: false,
+      lastUpdate: new Date(lastFetchTime).toISOString(),
+      nextUpdate: new Date(lastFetchTime + CACHE_DURATION).toISOString()
+    });
   } catch (error) {
     console.error("Erro ao buscar vídeos:", error);
+    
+    if (cachedVideos.length > 0) {
+      console.log('Retornando dados do cache devido ao erro');
+      return NextResponse.json({
+        videos: cachedVideos,
+        fromCache: true,
+        error: 'Dados do cache devido a erro na API',
+        lastUpdate: new Date(lastFetchTime).toISOString()
+      });
+    }
+    
     return NextResponse.json(
       { error: "Erro ao buscar vídeos" },
       { status: 500 }
