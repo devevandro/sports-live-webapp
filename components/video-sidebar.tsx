@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronUp, Radio } from "lucide-react";
+import { ChevronUp, Radio, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Video {
@@ -16,12 +16,16 @@ interface VideoSidebarProps {
   videos: Video[];
   selectedVideo: Video;
   onSelectVideo: (video: Video) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 export function VideoSidebar({
   videos,
   selectedVideo,
   onSelectVideo,
+  onRefresh,
+  isLoading = false,
 }: VideoSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -51,12 +55,35 @@ export function VideoSidebar({
             : "opacity-0 translate-y-full"
         )}
       >
-        <div className="p-3 border-b border-[#272727] flex items-center gap-2">
-          <Radio className="w-4 h-4 text-red-500" />
-          <h2 className="font-semibold text-white text-sm">Lives</h2>
-          <span className="text-xs text-muted-foreground">
-            ({videos.length} ao vivo)
-          </span>
+        <div className="p-3 border-b border-[#272727] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Radio className="w-4 h-4 text-red-500" />
+            <h2 className="font-semibold text-white text-sm">Lives</h2>
+            <span className="text-xs text-muted-foreground">
+              ({videos.length} ao vivo)
+            </span>
+          </div>
+          
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isLoading}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-white transition-colors rounded",
+                "hover:bg-[#272727]/50 disabled:opacity-50 disabled:cursor-not-allowed",
+                isLoading && "animate-pulse"
+              )}
+              title="Atualizar lives"
+            >
+              <RefreshCw className={cn(
+                "w-3 h-3",
+                isLoading && "animate-spin"
+              )} />
+              <span className="hidden sm:inline cursor-pointer">
+                {isLoading ? "Buscando..." : "Atualizar"}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto overflow-y-hidden h-[calc(100%-44px)] px-3 py-2">

@@ -17,34 +17,54 @@ export function YouTubePlayer() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [noLives, setNoLives] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    async function fetchVideos() {
-      try {
-        const response = await fetch("/api/youtube-lives");
-        const data = await response.json();
+  async function fetchVideos(forceRefresh = false) {
+    try {
+      if (forceRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
 
-        if (Array.isArray(data) && data.length > 0) {
-          setVideos(data);
-          setSelectedVideo(data[0]);
-          setNoLives(false);
-        } else {
-          setVideos([]);
-          setSelectedVideo(null);
-          setNoLives(true);
+      const url = forceRefresh ? "/api/youtube-lives?refresh=true" : "/api/youtube-lives";
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      const videoList = data.videos || data;
+      
+      if (Array.isArray(videoList) && videoList.length > 0) {
+        setVideos(videoList);
+        if (!selectedVideo || !videoList.find(v => v.id === selectedVideo.id)) {
+          setSelectedVideo(videoList[0]);
         }
-      } catch (error) {
-        console.error("Erro ao buscar vídeos:", error);
+        setNoLives(false);
+      } else {
         setVideos([]);
         setSelectedVideo(null);
         setNoLives(true);
-      } finally {
-        setIsLoading(false);
       }
+      
+      if (forceRefresh && data.fromCache === false) {
+        console.log('Lives atualizadas da API');
+      } else if (data.fromCache) {
+        console.log('Lives carregadas do cache');
+      }
+      
+    } catch (error) {
+      console.error("Erro ao buscar vídeos:", error);
+      setVideos([]);
+      setSelectedVideo(null);
+      setNoLives(true);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
+  }
 
+  useEffect(() => {
     fetchVideos();
   }, []);
 
@@ -87,6 +107,8 @@ export function YouTubePlayer() {
           videos={videos}
           selectedVideo={selectedVideo}
           onSelectVideo={setSelectedVideo}
+          onRefresh={() => fetchVideos(true)}
+          isLoading={isRefreshing}
         />
       </div>
 
@@ -127,6 +149,8 @@ export function YouTubePlayer() {
             videos={otherVideos}
             selectedVideo={selectedVideo}
             onSelectVideo={setSelectedVideo}
+            onRefresh={() => fetchVideos(true)}
+            isLoading={isRefreshing}
           />
         </div>
       </div>
