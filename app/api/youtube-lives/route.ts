@@ -52,7 +52,6 @@ export async function GET(request: Request) {
       "UC94kyY3rSw4j4LjAd8tUBBw",
       "UCk_kqhVTW4TTS3wB15lrdBw",
       "UCrlSTiILK9Q61R11O_gEuNg",
-      "UCuGW2-KtjIS2GI707tO8H9A",
     ];
 
     const videosMap = new Map();
