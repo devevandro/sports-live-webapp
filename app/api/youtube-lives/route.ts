@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const channelIds = [
+    const channelIdsToProd = [
       "UCs-6sCz2LJm1PrWQN4ErsPw",
       "UC6dZOvuuxPz5Mw8FmbLPZYQ",
       "UCU7CKWffsyRnkG2yfI8w3gA",
@@ -54,6 +54,16 @@ export async function GET(request: Request) {
       "UCrlSTiILK9Q61R11O_gEuNg",
     ];
 
+    const channelsIdToStage = [
+      "UCSJ4gkVC6NrvII8umztf0Ow",
+      "UCBDsIJ0MNMbp7KMhD69oazA",
+    ];
+
+    const channelIds =
+      process.env.NODE_ENV === "production"
+        ? channelIdsToProd
+        : channelsIdToStage;
+
     const videosMap = new Map();
 
     async function fetchLiveVideos(channelId: string) {
@@ -70,24 +80,42 @@ export async function GET(request: Request) {
         clearTimeout(timeout);
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Erro detalhado da API YouTube para canal ${channelId}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            errorText: errorText,
+            url: url
+          });
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log("Dados recebidos da API do YouTube:", data);
+        console.log(`Dados recebidos da API do YouTube para canal ${channelId}:`, {
+          totalItems: data.items?.length || 0,
+          channelId: channelId,
+          hasError: !!data.error
+        });
+
+        if (data.error) {
+          console.error(`Erro na resposta da API YouTube:`, data.error);
+          throw new Error(`API Error: ${data.error.message || 'Unknown error'}`);
+        }
 
         if (data.items && data.items.length > 0) {
-          const videoIds = data.items.map((item: any) => item.id.videoId);
-
-          data.items.forEach((videoDetail: any) => {
-            videosMap.set(videoDetail.id, {
-              id: videoDetail.id,
-              title: videoDetail.snippet.title,
-              channel: videoDetail.snippet.channelTitle,
-              thumbnail: videoDetail.snippet.thumbnails?.default?.url,
-              viewers: "Ao vivo",
-              categoryId: videoDetail.snippet.categoryId,
-            });
+          data.items.forEach((item: any) => {
+            // Garantir que temos um ID válido
+            const videoId = item.id?.videoId;
+            if (videoId) {
+              videosMap.set(videoId, {
+                id: videoId,
+                title: item.snippet.title || 'Sem título',
+                channel: item.snippet.channelTitle || 'Canal desconhecido',
+                thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+                viewers: "Ao vivo",
+                categoryId: item.snippet.categoryId,
+              });
+            }
           });
         }
       } catch (error) {

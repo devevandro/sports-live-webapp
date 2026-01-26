@@ -88,13 +88,13 @@ export function VideoSidebar({
 
         <div className="overflow-x-auto overflow-y-hidden h-[calc(100%-44px)] px-3 py-2">
           <div className="flex gap-3 h-full">
-            {videos.map((video) => (
+            {videos.map((video, index) => (
               <button
-                key={video.id}
+                key={`video-${video.id}-${index}`}
                 onClick={() => onSelectVideo(video)}
                 className={cn(
                   "shrink-0 w-48 p-2 rounded-lg transition-all duration-200 text-left group cursor-pointer",
-                  selectedVideo.id === video.id
+                  selectedVideo?.id === video.id
                     ? "bg-[#272727] ring-1 ring-red-500/50"
                     : "hover:bg-[#272727]/50"
                 )}
