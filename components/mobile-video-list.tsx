@@ -62,13 +62,13 @@ export function MobileVideoList({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {videos.map((video) => (
+        {videos.map((video, index) => (
           <button
-            key={video.id}
+            key={`mobile-video-${video.id}-${index}`}
             onClick={() => onSelectVideo(video)}
             className={cn(
               "w-full text-left transition-colors",
-              selectedVideo.id === video.id
+              selectedVideo?.id === video.id
                 ? "bg-[#272727]"
                 : "hover:bg-[#1a1a1a]"
             )}

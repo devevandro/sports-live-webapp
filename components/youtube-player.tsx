@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { VideoSidebar } from "./video-sidebar";
 import { MobileVideoList } from "./mobile-video-list";
+import { YouTubeEmbed } from "./youtube-embed";
+import { DebugPanel } from "./debug-panel";
 import { Loader2, VideoOff } from "lucide-react";
 
 interface Video {
@@ -98,7 +100,14 @@ export function YouTubePlayer() {
     );
   }
 
-  const otherVideos = videos.filter((v) => v.id !== selectedVideo.id);
+  const handleVideoSelection = (video: Video) => {
+    if (video && video.id) {
+      console.log(`Selecionando vídeo: ${video.id} - ${video.title}`);
+      setSelectedVideo(video);
+    }
+  };
+
+  const otherVideos = videos.filter((v) => v?.id && v.id !== selectedVideo?.id);
 
   return (
     <div className="relative flex flex-col h-screen overflow-hidden bg-[#0f0f0f]">
@@ -106,7 +115,7 @@ export function YouTubePlayer() {
         <VideoSidebar
           videos={videos}
           selectedVideo={selectedVideo}
-          onSelectVideo={setSelectedVideo}
+          onSelectVideo={handleVideoSelection}
           onRefresh={() => fetchVideos(true)}
           isLoading={isRefreshing}
         />
@@ -114,17 +123,13 @@ export function YouTubePlayer() {
 
       <div className="md:hidden flex flex-col h-screen">
         <div className="w-full shrink-0 sticky top-0 z-10 bg-[#0f0f0f]">
-          <div className="relative w-full aspect-video bg-black">
-            <iframe
-              key={selectedVideo.id}
-              ref={iframeRef}
-              src={`https://www.youtube.com/embed/${selectedVideo.id}?autoplay=1&mute=0&playsinline=1`}
-              title={selectedVideo.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
+          <YouTubeEmbed
+            videoId={selectedVideo.id}
+            title={selectedVideo.title}
+            className="w-full aspect-video bg-black"
+            autoplay={true}
+            muted={false}
+          />
           <div className="px-3 py-2 border-b border-[#272727]">
             <div className="flex items-center gap-2 mb-1">
               <span className="bg-red-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded flex items-center gap-1">
@@ -148,7 +153,7 @@ export function YouTubePlayer() {
           <MobileVideoList
             videos={otherVideos}
             selectedVideo={selectedVideo}
-            onSelectVideo={setSelectedVideo}
+            onSelectVideo={handleVideoSelection}
             onRefresh={() => fetchVideos(true)}
             isLoading={isRefreshing}
           />
@@ -157,17 +162,13 @@ export function YouTubePlayer() {
 
       <div className="hidden md:flex h-full flex-col items-center justify-center p-4">
         <div className="w-full max-w-5xl">
-          <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl group">
-            <iframe
-              key={selectedVideo.id}
-              ref={iframeRef}
-              src={`https://www.youtube.com/embed/${selectedVideo.id}?autoplay=1&mute=0`}
-              title={selectedVideo.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
+          <YouTubeEmbed
+            videoId={selectedVideo.id}
+            title={selectedVideo.title}
+            className="w-full aspect-video rounded-xl overflow-hidden bg-black shadow-2xl"
+            autoplay={true}
+            muted={false}
+          />
 
           <div className="mt-4 text-foreground">
             <div className="flex items-center gap-2 mb-2">
@@ -187,6 +188,12 @@ export function YouTubePlayer() {
           </div>
         </div>
       </div>
+
+      <DebugPanel 
+        videos={videos}
+        selectedVideo={selectedVideo}
+        error={noLives ? "Nenhuma live encontrada" : undefined}
+      />
     </div>
   );
 }
