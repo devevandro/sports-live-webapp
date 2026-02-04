@@ -21,7 +21,9 @@ export async function GET() {
       "@tveespiritosanto",
       "@rcsportoficial",
       "@TVFNF",
-      "TvFFDF"
+      "TvFFDF",
+      "@canaldobenjaoficial",
+      "@NNPlayOficial"
     ];
 
     const videosMap = new Map();
